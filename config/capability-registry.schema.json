@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MarketplaceAndPaymentCapabilityRegistry",
+  "description": "Schema for Acquira's version-controlled marketplace and payment capability registry",
+  "type": "object",
+  "required": ["version", "last_updated", "providers"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date"
+    },
+    "providers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["provider_id", "provider_name", "provider_type", "capabilities"],
+        "properties": {
+          "provider_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$"
+          },
+          "provider_name": {
+            "type": "string"
+          },
+          "provider_type": {
+            "type": "string",
+            "enum": ["marketplace", "payment"]
+          },
+          "capabilities": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": {
+              "type": "object",
+              "required": ["status", "evidence_source", "verification_date"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["verified", "unverified", "unavailable", "pending-verification"]
+                },
+                "evidence_source": {
+                  "type": "string"
+                },
+                "verification_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "limitations": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

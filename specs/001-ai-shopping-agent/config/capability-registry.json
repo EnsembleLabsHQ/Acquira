@@ -1,0 +1,216 @@
+{
+  "version": "1.1.0",
+  "last_updated": "2026-11-01",
+  "providers": [
+    {
+      "provider_id": "mock_provider",
+      "provider_name": "Acquira Mock Sandbox Provider",
+      "provider_type": "marketplace",
+      "capabilities": {
+        "search": {
+          "status": "verified",
+          "evidence_source": "Local test harness and automated mock fixtures",
+          "verification_date": "2026-11-01",
+          "limitations": ["Simulated catalog responses only; demo environment"]
+        },
+        "cart": {
+          "status": "verified",
+          "evidence_source": "Local test harness sandbox cart simulation",
+          "verification_date": "2026-11-01",
+          "limitations": ["In-memory cart simulation"]
+        },
+        "checkout": {
+          "status": "verified",
+          "evidence_source": "Local mock checkout contract test suite",
+          "verification_date": "2026-11-01",
+          "limitations": ["Simulated order creation only; produces demo orders; never dispatches real goods"]
+        },
+        "tracking": {
+          "status": "verified",
+          "evidence_source": "Local mock tracking status test suite",
+          "verification_date": "2026-11-01",
+          "limitations": ["Simulates synthetic order lifecycle states"]
+        }
+      }
+    },
+    {
+      "provider_id": "amazon_in",
+      "provider_name": "Amazon India",
+      "provider_type": "marketplace",
+      "capabilities": {
+        "search": {
+          "status": "pending-verification",
+          "evidence_source": "Product Advertising API terms and credentials evaluation in progress",
+          "verification_date": "2026-11-01",
+          "limitations": ["API rate limits; associate account required"]
+        },
+        "cart": {
+          "status": "unverified",
+          "evidence_source": "No public consumer cart API authorized under standard terms",
+          "verification_date": "2026-11-01",
+          "limitations": ["Direct cart manipulation not permitted"]
+        },
+        "checkout": {
+          "status": "unavailable",
+          "evidence_source": "Unverified capability limitation: no public programmatic consumer checkout API verified under standard developer terms",
+          "verification_date": "2026-11-01",
+          "limitations": ["Fallback to Safe Provider Handoff mandatory (FR-028)"]
+        },
+        "tracking": {
+          "status": "unverified",
+          "evidence_source": "Customer tracking API requires enterprise carrier authorization",
+          "verification_date": "2026-11-01",
+          "limitations": ["Fallback to direct Amazon tracking URL"]
+        }
+      }
+    },
+    {
+      "provider_id": "flipkart",
+      "provider_name": "Flipkart",
+      "provider_type": "marketplace",
+      "capabilities": {
+        "search": {
+          "status": "pending-verification",
+          "evidence_source": "Flipkart Affiliate / Developer API access under review",
+          "verification_date": "2026-11-01",
+          "limitations": ["Rate-limited API; affiliate commission agreement required"]
+        },
+        "cart": {
+          "status": "unverified",
+          "evidence_source": "No public consumer cart API verified",
+          "verification_date": "2026-11-01",
+          "limitations": ["Direct cart manipulation not supported"]
+        },
+        "checkout": {
+          "status": "unavailable",
+          "evidence_source": "Unverified capability limitation: no public programmatic consumer checkout API verified under affiliate/developer terms",
+          "verification_date": "2026-11-01",
+          "limitations": ["Fallback to Safe Provider Handoff mandatory (FR-028)"]
+        },
+        "tracking": {
+          "status": "unverified",
+          "evidence_source": "Order tracking API pending provider partnership confirmation",
+          "verification_date": "2026-11-01",
+          "limitations": ["Fallback to direct Flipkart tracking URL"]
+        }
+      }
+    },
+    {
+      "provider_id": "mock_payment_gateway",
+      "provider_name": "Acquira Mock Payment Gateway",
+      "provider_type": "payment",
+      "capabilities": {
+        "authorize": {
+          "status": "verified",
+          "evidence_source": "Local deterministic payment simulation test harness",
+          "verification_date": "2026-11-01",
+          "limitations": ["Simulated authorization only; zero real money movement; produces synthetic DEMO-RECEIPT tokens"]
+        },
+        "capture": {
+          "status": "verified",
+          "evidence_source": "Local deterministic payment capture test harness",
+          "verification_date": "2026-11-01",
+          "limitations": ["Simulated capture only; cannot be used to authorize LIVE_PROVIDER retailer orders"]
+        },
+        "reconcile": {
+          "status": "verified",
+          "evidence_source": "Local deterministic payment reconciliation test harness",
+          "verification_date": "2026-11-01",
+          "limitations": ["Deterministic lookup for simulated success, decline, and timeout states"]
+        },
+        "refund": {
+          "status": "verified",
+          "evidence_source": "Local mock refund test harness",
+          "verification_date": "2026-11-01",
+          "limitations": ["Simulated demo refund records only"]
+        }
+      }
+    },
+    {
+      "provider_id": "cbdc_pilot",
+      "provider_name": "Reserve Bank of India Digital Rupee (e₹-R) [Deferred Extension]",
+      "provider_type": "payment",
+      "capabilities": {
+        "authorize": {
+          "status": "unavailable",
+          "evidence_source": "Unverified capability limitation: outside initial mandatory MVP scope per constitution A-004; no verified public API available for third-party autonomous agents",
+          "verification_date": "2026-11-01",
+          "limitations": [
+            "Deferred future extension per project constitution (A-004); not exposed as an active MVP payment method",
+            "No public programmatic autonomous agent debit API verified; requires separate future specification, risk assessment, and governance approval"
+          ]
+        },
+        "capture": {
+          "status": "unavailable",
+          "evidence_source": "Unverified capability limitation: no public programmatic capture API verified for third-party automated agents",
+          "verification_date": "2026-11-01",
+          "limitations": ["Direct autonomous token movement or programmatic debit is unverified and unavailable"]
+        },
+        "reconcile": {
+          "status": "unavailable",
+          "evidence_source": "Unverified capability limitation: no public reconciliation API verified for third-party automated agents",
+          "verification_date": "2026-11-01",
+          "limitations": ["Automated transaction reconciliation is unverified and unavailable"]
+        }
+      }
+    },
+    {
+      "provider_id": "phonepe_pg",
+      "provider_name": "PhonePe Payment Gateway / UPI [Prospective]",
+      "provider_type": "payment",
+      "capabilities": {
+        "authorize": {
+          "status": "pending-verification",
+          "evidence_source": "PhonePe Merchant PG developer documentation and commercial terms under technical review",
+          "verification_date": "2026-11-01",
+          "limitations": [
+            "Prospective integration pending merchant onboarding, API credential verification, and permitted flow confirmation",
+            "Standard UPI payment requires interactive user authentication (app-switch or QR presentation)",
+            "Unverified capability limitation: no direct autonomous debit API without user authentication verified for automated agents"
+          ]
+        },
+        "capture": {
+          "status": "unavailable",
+          "evidence_source": "Unverified capability limitation: no direct autonomous capture API verified under standard merchant PG terms without interactive user authentication",
+          "verification_date": "2026-11-01",
+          "limitations": ["Autonomous capture without interactive user approval is unavailable; must route to Safe Payment Handoff (UPI Intent URL / QR)"]
+        },
+        "reconcile": {
+          "status": "pending-verification",
+          "evidence_source": "PhonePe Transaction Status Check API documentation under technical review",
+          "verification_date": "2026-11-01",
+          "limitations": ["Pending verified production merchant credentials and webhook endpoint testing"]
+        }
+      }
+    },
+    {
+      "provider_id": "amazon_pay",
+      "provider_name": "Amazon Pay [Prospective]",
+      "provider_type": "payment",
+      "capabilities": {
+        "authorize": {
+          "status": "pending-verification",
+          "evidence_source": "Amazon Pay Merchant API developer documentation under technical evaluation",
+          "verification_date": "2026-11-01",
+          "limitations": [
+            "Prospective integration pending merchant agreement and API credential issuance",
+            "Interactive user authorization required via hosted Amazon redirect flow",
+            "Unverified capability limitation: autonomous background authorization without user interaction is not verified"
+          ]
+        },
+        "capture": {
+          "status": "unavailable",
+          "evidence_source": "Unverified capability limitation: no autonomous background debit API verified for third-party agent checkouts under standard merchant agreement",
+          "verification_date": "2026-11-01",
+          "limitations": ["Autonomous background capture is unavailable; requires user redirect approval or fallback to Safe Payment Handoff"]
+        },
+        "reconcile": {
+          "status": "pending-verification",
+          "evidence_source": "Amazon Pay Order Reference API specification under technical review",
+          "verification_date": "2026-11-01",
+          "limitations": ["Pending active merchant credentials and sandbox validation"]
+        }
+      }
+    }
+  ]
+}

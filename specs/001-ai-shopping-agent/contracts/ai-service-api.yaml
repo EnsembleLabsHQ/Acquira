@@ -1,0 +1,423 @@
+openapi: 3.1.0
+info:
+  title: Acquira AI Processing Engine API
+  description: >
+    Internal service API for natural language extraction, Roman-script Hinglish parsing,
+    marketplace offer normalization, and explainable ranking.
+    
+    CRITICAL ARCHITECTURAL BOUNDARY:
+    Outputs from this service are strictly ADVISORY. This service has zero access to payment
+    credentials, cannot execute financial transactions, and cannot authorize purchases.
+    The consuming TypeScript Policy Engine in the Next.js core application holds sole authority
+    for validating spending limits, enforcing price baselines, and authorizing checkout actions.
+  version: 1.1.0
+paths:
+  /api/v1/extract-requirements:
+    post:
+      summary: Extract structured shopping requirements from natural language
+      description: Parses English and Roman-script Hinglish user messages into a normalized product request schema.
+      operationId: extractRequirements
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractRequirementsRequest'
+      responses:
+        '200':
+          description: Successfully parsed requirements
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractRequirementsResponse'
+        '400':
+          description: Malformed input request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error on input query structure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal AI processing failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '504':
+          description: Upstream model execution timeout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/discover-and-rank:
+    post:
+      summary: Normalize offers and compute explainable ranking
+      description: >
+        Takes raw offers from verified marketplace adapters, computes itemized total payable cost
+        (including explicit shipping, taxes, and platform fees), surfaces trade-offs, and produces
+        a ranked recommendation bundle with complete data-quality and cost disclosures.
+        Unknown or unavailable charges are NEVER treated as zero.
+      operationId: discoverAndRank
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiscoverAndRankRequest'
+      responses:
+        '200':
+          description: Successfully normalized and ranked recommendations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoverAndRankResponse'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Schema validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal processing failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '504':
+          description: Ranking computation timeout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error_code
+        - message
+        - retryable
+        - timestamp
+      properties:
+        error_code:
+          type: string
+          example: "EXTRACTION_TIMEOUT"
+        message:
+          type: string
+          example: "The AI processing engine timed out while parsing requirements."
+        details:
+          type: object
+          additionalProperties: true
+        retryable:
+          type: boolean
+          example: true
+        timestamp:
+          type: string
+          format: date-time
+
+    ExtractRequirementsRequest:
+      type: object
+      required:
+        - raw_query
+      properties:
+        raw_query:
+          type: string
+          description: User input message (English or Roman-script Hinglish)
+          example: "Mujhe college ke liye laptop chahiye under 60k with 16GB RAM and good battery"
+        conversation_context:
+          type: array
+          items:
+            type: object
+            required:
+              - role
+              - content
+            properties:
+              role:
+                type: string
+                enum: [user, assistant]
+              content:
+                type: string
+
+    ExtractRequirementsResponse:
+      type: object
+      required:
+        - is_resolved
+        - extracted_category
+      properties:
+        is_resolved:
+          type: boolean
+          description: True if search can proceed; false if clarification is required
+        extracted_category:
+          type: string
+          example: "laptop"
+        budget_max_inr:
+          type: number
+          nullable: true
+          example: 60000.00
+        specifications:
+          type: object
+          additionalProperties: true
+          example:
+            ram: "16GB"
+            use_case: "college"
+            battery_life: "high"
+        clarification_question:
+          type: string
+          nullable: true
+          description: Targeted, plain language question if critical requirement is missing or contradictory
+        detected_language:
+          type: string
+          enum: [en, hinglish]
+        extracted_preferences:
+          type: object
+          properties:
+            preferred_payment_methods:
+              type: array
+              items:
+                type: string
+                enum: [UPI_PHONEPE, AMAZON_PAY, MOCK_SANDBOX]
+            preferred_sellers:
+              type: array
+              items:
+                type: string
+
+    ExecutionMode:
+      type: string
+      enum: [SIMULATED, LIVE_PROVIDER, MANUAL_HANDOFF]
+      description: Explicit execution mode distinguishing simulation from real money movement or manual handoff.
+
+    CostComponent:
+      type: object
+      required:
+        - status
+      properties:
+        amount:
+          type: number
+          nullable: true
+          description: Amount in INR. Present if KNOWN or ESTIMATED; null if UNAVAILABLE.
+          example: 49.00
+        status:
+          type: string
+          enum: [KNOWN, ESTIMATED, UNAVAILABLE]
+          description: Never assume UNAVAILABLE is zero.
+          example: "KNOWN"
+        description:
+          type: string
+          nullable: true
+          example: "Standard ground shipping"
+
+    ItemizedCostStructure:
+      type: object
+      required:
+        - base_price_inr
+        - shipping
+        - taxes
+        - platform_fees
+        - has_unavailable_costs
+        - unavailable_components
+        - cost_disclosures
+      properties:
+        base_price_inr:
+          type: number
+          example: 54990.00
+        shipping:
+          $ref: '#/components/schemas/CostComponent'
+        taxes:
+          $ref: '#/components/schemas/CostComponent'
+        platform_fees:
+          $ref: '#/components/schemas/CostComponent'
+        total_payable_inr:
+          type: number
+          nullable: true
+          description: >
+            Calculated total payable cost (base + known/estimated shipping, taxes, platform fees).
+            If any component is UNAVAILABLE, this represents the confirmed lower bound.
+          example: 55039.00
+        has_unavailable_costs:
+          type: boolean
+          description: True if shipping, taxes, or platform_fees is UNAVAILABLE.
+          example: false
+        unavailable_components:
+          type: array
+          items:
+            type: string
+            enum: [shipping, taxes, platform_fees]
+          example: []
+        cost_disclosures:
+          type: array
+          items:
+            type: string
+          example: ["Platform convenience fee of ₹49 included"]
+
+    RawProviderOffer:
+      type: object
+      required:
+        - provider_id
+        - provider_item_id
+        - canonical_seller_id
+        - canonical_variant_sku
+        - title
+        - product_url
+        - seller_name
+        - cost
+        - retrieved_at
+      properties:
+        provider_id:
+          type: string
+          example: "amazon_in"
+        provider_item_id:
+          type: string
+          example: "B09W9F5V4G"
+        canonical_seller_id:
+          type: string
+          description: Provider merchant identifier (independent of display name)
+          example: "A2JVBRHXXXXX"
+        canonical_variant_sku:
+          type: string
+          description: Specific product variant identifier (independent of product title)
+          example: "HP-15S-12GEN-16-512"
+        title:
+          type: string
+          example: "HP 15s 12th Gen Intel Core i5 15.6 inch Laptop (16GB RAM/512GB SSD)"
+        product_url:
+          type: string
+        seller_name:
+          type: string
+          example: "Appario Retail"
+        seller_rating:
+          type: number
+          nullable: true
+          example: 4.3
+        cost:
+          $ref: '#/components/schemas/ItemizedCostStructure'
+        raw_specifications:
+          type: object
+          additionalProperties: true
+        retrieved_at:
+          type: string
+          format: date-time
+        is_stale:
+          type: boolean
+          default: false
+
+    DiscoverAndRankRequest:
+      type: object
+      required:
+        - request_id
+        - requirements
+        - raw_offers
+        - staleness_threshold_seconds
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        requirements:
+          $ref: '#/components/schemas/ExtractRequirementsResponse'
+        raw_offers:
+          type: array
+          items:
+            $ref: '#/components/schemas/RawProviderOffer'
+        staleness_threshold_seconds:
+          type: integer
+          default: 21600
+          description: Threshold in seconds (e.g. 21600 = 6 hours)
+
+    NormalizedCandidate:
+      type: object
+      required:
+        - candidate_id
+        - provider_id
+        - provider_item_id
+        - canonical_seller_id
+        - canonical_variant_sku
+        - title
+        - seller_name
+        - cost
+        - rank_position
+        - is_recommended
+      properties:
+        candidate_id:
+          type: string
+          format: uuid
+        provider_id:
+          type: string
+        provider_item_id:
+          type: string
+        canonical_seller_id:
+          type: string
+        canonical_variant_sku:
+          type: string
+        title:
+          type: string
+        product_url:
+          type: string
+        seller_name:
+          type: string
+        seller_rating:
+          type: number
+          nullable: true
+        cost:
+          $ref: '#/components/schemas/ItemizedCostStructure'
+        rank_position:
+          type: integer
+        is_recommended:
+          type: boolean
+        specifications_match_score:
+          type: number
+        key_tradeoffs:
+          type: array
+          items:
+            type: string
+        unavailable_data_disclosures:
+          type: array
+          items:
+            type: string
+          description: Disclosures of missing comparison fields (warranty, delivery date, fees)
+        ranking_confidence:
+          type: string
+          enum: [HIGH, MODERATE, LOW_DATA_GAPS]
+          description: Low confidence if key cost or spec data is unavailable (FR-016)
+
+    DiscoverAndRankResponse:
+      type: object
+      required:
+        - ranking_rationale
+        - trade_offs_summary
+        - data_quality_disclosures
+        - candidates
+        - data_freshness_at
+        - contains_stale_data
+      properties:
+        ranking_rationale:
+          type: string
+          description: Plain language explanation of primary choice
+        trade_offs_summary:
+          type: string
+          description: Plain language comparison of alternatives
+        data_quality_disclosures:
+          type: array
+          items:
+            type: string
+          description: Discloses any data fields that were estimated or unavailable across candidates
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/NormalizedCandidate'
+        data_freshness_at:
+          type: string
+          format: date-time
+        contains_stale_data:
+          type: boolean
